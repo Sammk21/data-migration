@@ -1,0 +1,5 @@
+2024-10-05 18:28:28,994 - INFO - Starting data migration...
+2024-10-05 18:28:29,054 - INFO - Database connection established successfully.
+2024-10-05 18:28:29,055 - INFO - Successfully loaded exam data from JSON file.
+2024-10-05 18:28:29,055 - INFO - Attempting to insert exam: NIFT Entrance Exam - National Institute of Fashion Technology Entrance Examination
+2024-10-05 18:28:29,059 - ERROR - Error inserting exam 'NIFT Entrance Exam - National Institute of Fashion Technology Entrance Examination': not all arguments converted during string formatting
