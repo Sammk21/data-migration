@@ -8,16 +8,21 @@ class CombinedCollegesSpider(scrapy.Spider):
     start_urls = ['https://www.collegedekho.com/engineering/colleges-in-india/']
 
     custom_settings = {
-        'DOWNLOAD_DELAY': 0.5,
-        'FEEDS': {
-            'colleges.json': {
-                'format': 'json',
-                'overwrite': True,
-            }
-        }
+        "CLOSESPIDER_ITEMCOUNT": None,
+        "CLOSESPIDER_PAGECOUNT": None,
+        'DOWNLOAD_DELAY': 0,
+        # 'CONCURRENT_REQUESTS': 1,
+        # 'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
+        'AUTOTHROTTLE_ENABLED': True,
+        'FEED_EXPORT_BATCH_ITEM_COUNT': 1000,
+        'RANDOMIZE_DOWNLOAD_DELAY': True,
+       
     }
 
-    processed_colleges = set()
+
+    
+    def start_requests(self):
+        yield scrapy.Request(self.start_urls[0], callback=self.parse, meta={'page': 1})
 
     def parse(self, response):
         college_blocks = response.css('div.collegeCardBox.col-md-12')
@@ -28,11 +33,7 @@ class CombinedCollegesSpider(scrapy.Spider):
         for college in all_blocks:
             
             title = college.css('div.titleSection h3 a::text').get().strip()
-            
-            if title in self.processed_colleges:
-                continue
-            
-            self.processed_colleges.add(title)
+        
             
             location_info = college.css('div.collegeinfo ul.info li:nth-child(2)::text').get()
             city, state = location_info.split(', ') if location_info else (None, None)
@@ -92,13 +93,19 @@ class CombinedCollegesSpider(scrapy.Spider):
             college_link = college.css('div.titleSection h3 a::attr(href)').get()
             if college_link:
                 yield response.follow(college_link, self.parse_college_page, meta={'college_data': college_data})
+                
+        
+            current_page = response.meta.get('page', 1)
+            next_page = current_page + 1
+            next_page_url = f"{self.start_urls[0]}?page={next_page}" 
             
-            pagination_block = response.css('div.pagination ul li a::attr(href)').getall()    
-
-        # Handle pagination for college list
-            next_page = response.css('li.round a::attr(href)').get()
-            if next_page:
-                yield response.follow(next_page, self.parse)
+            if response.css('li.round a::attr(href)').get():
+                yield scrapy.Request(
+                url=next_page_url,
+                callback=self.parse,
+                meta={'page': next_page}
+            )   
+            
 
     def parse_college_page(self, response):
         college_data = response.meta['college_data']
@@ -241,3 +248,4 @@ class CombinedCollegesSpider(scrapy.Spider):
     def safe_extract(self, selector, css_selector):
         extracted = selector.css(css_selector).get()
         return extracted.strip() if extracted else None
+    
